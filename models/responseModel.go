@@ -6,7 +6,7 @@ type ResponseModelForSingleMovie struct {
 	Data   MovieModel `json:"data"`
 }
 
-type ResponseModelForDeleteOrError struct {
+type ResponseModelWithStringData struct {
 	Code   int    `json:"code,omitempty"`
 	Status string `json:"status,omitempty"`
 	Data   string `json:"data,omitempty"`
