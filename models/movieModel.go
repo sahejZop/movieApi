@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 )
 
@@ -15,80 +14,66 @@ type MovieModel struct {
 	Released bool    `json:"released,omitempty"`
 }
 
-func ReadMovies() (mapOfMovies map[int]MovieModel) {
-	mapOfMovies = map[int]MovieModel{}
+func ReadMovies() (mapOfMovies map[int]MovieModel, err error) {
 	jsonData, err := os.ReadFile("./data/MoviesList.json")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	var movies []MovieModel
-	err = json.Unmarshal(jsonData, &movies)
+	err = json.Unmarshal(jsonData, &mapOfMovies)
 	if err != nil {
-		panic(err)
-	}
-
-	for _, movie := range movies {
-		mapOfMovies[(movie.Id)] = movie
+		return nil, err
 	}
 
 	return
 }
 
-func GetMovies() (moviesList []MovieModel) {
-	var fileData []byte
-	var err = error(nil)
-	fileData, err = os.ReadFile("./data/MoviesList.json")
-
+func GetMovies() (moviesList []MovieModel, err error) {
+	mapOfMovies, err := ReadMovies()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	err = json.Unmarshal(fileData, &moviesList)
-
-	if err != nil {
-		panic(err)
+	for index := range mapOfMovies {
+		moviesList = append(moviesList, mapOfMovies[index])
 	}
-
-	fmt.Println(string(fileData))
-
-	return moviesList
+	return
 }
 
-func UpdateMovies(data []MovieModel) {
-	jsonData, err := json.Marshal(data)
+func ConvertSliceToMap(moviesList []MovieModel) (mapOfMovies map[int]MovieModel) {
+	for _, movie := range moviesList {
+		mapOfMovies[movie.Id] = movie
+	}
+	return
+}
+
+func SetMovies(mapOfMovies map[int]MovieModel) error {
+	jsonData, err := json.Marshal(mapOfMovies)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = os.WriteFile("./data/MoviesList.json", jsonData, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func GetMovieById(id int) (movie MovieModel) {
-	mapOfMovies := ReadMovies()
-
-	return mapOfMovies[id]
-}
-
-func DeleteMovieById(id int) {
-	mapOfMovies := ReadMovies()
+func DeleteMovieById(id int) error {
+	mapOfMovies, err := ReadMovies()
+	if err != nil {
+		return err
+	}
 	delete(mapOfMovies, id)
-	var movies []MovieModel
-	for _, movie := range mapOfMovies {
-		movies = append(movies, movie)
-	}
-
-	UpdateMovies(movies)
+	SetMovies(mapOfMovies)
+	return nil
 }
 
-func PutMovieById(movieStruct MovieModel) {
-	mapOfMovies := ReadMovies()
-
-	var movies []MovieModel
-	movies = append(movies, movieStruct)
-	for _, movie := range mapOfMovies {
-		movies = append(movies, movie)
+func PutMovieById(id int, movieStruct MovieModel) error {
+	mapOfMovies, err := ReadMovies()
+	if err != nil {
+		return err
 	}
-	UpdateMovies(movies)
+	delete(mapOfMovies, id)
+	mapOfMovies[movieStruct.Id] = movieStruct
+	SetMovies(mapOfMovies)
+	return nil
 }

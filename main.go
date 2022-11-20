@@ -27,44 +27,59 @@ func setupServer() {
 }
 
 func notAllowed(writer http.ResponseWriter, _ *http.Request) {
-	writeErrorResponse(writer, 405, "Method not allowed")
+	models.WriteErrorResponse(writer, 405, "Method not allowed")
 }
 
-func notFound(writer http.ResponseWriter, request *http.Request) {
-	writeErrorResponse(writer, 404, "Page not found")
+func notFound(writer http.ResponseWriter, _ *http.Request) {
+	models.WriteErrorResponse(writer, 404, "Page not found")
 }
 
 func handleMovies(writer http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case "GET":
 		{
-			getMovies(writer)
+			err := getMovies(writer)
+			if err != nil {
+				WriteInternalServerError(writer)
+			}
 		}
 	case "POST":
 		{
-			postMovies(writer, request)
+			err := postMovies(writer, request)
+			if err != nil {
+				WriteInternalServerError(writer)
+			}
 		}
 	}
 }
 
-func getMovies(writer http.ResponseWriter) {
-	writeSuccessResponse(writer, 200, "SUCCESS", models.GetMovies())
+func getMovies(writer http.ResponseWriter) error {
+	moviesList, err := models.GetMovies()
+	if err != nil {
+		return err
+	}
+	models.WriteSuccessResponse(writer, 200, "SUCCESS", moviesList)
+	return nil
 }
 
-func postMovies(writer http.ResponseWriter, request *http.Request) {
+func postMovies(writer http.ResponseWriter, request *http.Request) error {
 	newData, err := io.ReadAll(request.Body)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var updatedStruct []models.MovieModel
 	err = json.Unmarshal(newData, &updatedStruct)
 	if err != nil {
-		writeErrorResponse(writer, 400, "Incorrect format of data")
-		return
+		models.WriteErrorResponse(writer, 400, "Incorrect format of data")
+		return nil
 	} else {
-		writeSuccessResponse(writer, 200, "SUCCESS", updatedStruct)
+		models.WriteSuccessResponse(writer, 200, "SUCCESS", updatedStruct)
 	}
-	models.UpdateMovies(updatedStruct)
+	err = models.SetMovies(models.ConvertSliceToMap(updatedStruct))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func handleMovieById(writer http.ResponseWriter, request *http.Request) {
@@ -72,7 +87,7 @@ func handleMovieById(writer http.ResponseWriter, request *http.Request) {
 	for _, val := range mux.Vars(request) {
 		i, err := strconv.Atoi(val)
 		if err != nil {
-			writeErrorResponse(writer, 400, "id should be of type int")
+			models.WriteErrorResponse(writer, 400, "id should be of type int")
 			return
 		}
 		id = i
@@ -81,107 +96,81 @@ func handleMovieById(writer http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case "GET":
 		{
-			getMovieById(id, writer)
+			err := getMovieById(id, writer)
+			if err != nil {
+				WriteInternalServerError(writer)
+			}
 		}
 	case "PUT":
 		{
-			putMovieById(writer, request.Body)
+			err := putMovieById(id, writer, request.Body)
+			if err != nil {
+				WriteInternalServerError(writer)
+			}
 		}
 	case "DELETE":
 		{
-			deleteMovieById(id, writer)
+			err := deleteMovieById(id, writer)
+			if err != nil {
+				WriteInternalServerError(writer)
+			}
 		}
 	}
 
 }
 
-func getMovieById(id int, writer http.ResponseWriter) {
-	movieMap := models.ReadMovies()
+func getMovieById(id int, writer http.ResponseWriter) error {
+	movieMap, err := models.ReadMovies()
+	if err != nil {
+		return err
+	}
 	movie, itExists := movieMap[id]
 	if itExists {
-		writeSuccessResponseSingleMovie(writer, 200, "SUCCESS", movie)
+		models.WriteSuccessResponseSingleMovie(writer, 200, "SUCCESS", movie)
 	} else {
-		writeErrorResponse(writer, 404, "Movie with this id does not exist")
+		models.WriteErrorResponse(writer, 404, "Movie with this id does not exist")
 	}
+	return nil
 }
 
-func deleteMovieById(id int, writer http.ResponseWriter) {
-	movieMap := models.ReadMovies()
+func deleteMovieById(id int, writer http.ResponseWriter) error {
+	movieMap, err := models.ReadMovies()
+	if err != nil {
+		return err
+	}
 	_, itExists := movieMap[id]
 	if itExists {
-		writeSuccessResponseForDelete(writer, 200, "SUCCESS", "Movie successfully deleted")
-		models.DeleteMovieById(id)
+		models.WriteSuccessResponseForDelete(writer, 200, "SUCCESS", "Movie successfully deleted")
+		err := models.DeleteMovieById(id)
+		if err != nil {
+			return err
+		}
 	} else {
-		writeErrorResponse(writer, 404, "Movie with this id does not exist")
+		models.WriteErrorResponse(writer, 404, "Movie with this id does not exist")
 	}
+	return nil
 }
 
-func putMovieById(writer http.ResponseWriter, body io.ReadCloser) {
+func putMovieById(id int, writer http.ResponseWriter, body io.ReadCloser) error {
 	movieJson, err := io.ReadAll(body)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var movieStruct models.MovieModel
 	err = json.Unmarshal(movieJson, &movieStruct)
 	if err != nil {
-		writeErrorResponse(writer, 404, "Bad request")
-		return
+		models.WriteErrorResponse(writer, 404, "Bad request")
+		return nil
 	} else {
-		writeSuccessResponseSingleMovie(writer, 200, "SUCCESS", movieStruct)
+		models.WriteSuccessResponseSingleMovie(writer, 200, "SUCCESS", movieStruct)
 	}
-	models.PutMovieById(movieStruct)
+	err = models.PutMovieById(id, movieStruct)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func writeErrorResponse(writer http.ResponseWriter, code int, error string) {
-	response := models.ResponseModelWithStringData{
-		Code:   code,
-		Status: "ERROR",
-		Data:   error,
-	}
-	responseJson, err := json.MarshalIndent(response, "", "")
-	if err != nil {
-		panic(err)
-	}
-	writer.Write(responseJson)
-	writer.WriteHeader(code)
-	return
-}
-
-func writeSuccessResponse(writer http.ResponseWriter, code int, status string, data []models.MovieModel) {
-	response := models.ResponseModelForListOfMovie{
-		Code:   code,
-		Status: status,
-		Data:   data,
-	}
-	dataToShow, err := json.MarshalIndent(response, "", "")
-	if err != nil {
-		panic(err)
-	}
-	writer.Write(dataToShow)
-}
-
-func writeSuccessResponseSingleMovie(writer http.ResponseWriter, code int, status string, data models.MovieModel) {
-	response := models.ResponseModelForSingleMovie{
-		Code:   code,
-		Status: status,
-		Data:   data,
-	}
-	dataToShow, err := json.MarshalIndent(response, "", "")
-	if err != nil {
-		panic(err)
-	}
-	writer.Write(dataToShow)
-}
-
-func writeSuccessResponseForDelete(writer http.ResponseWriter, code int, status string, data string) {
-	response := models.ResponseModelWithStringData{
-		Code:   code,
-		Status: status,
-		Data:   data,
-	}
-	dataToShow, err := json.MarshalIndent(response, "", "")
-	if err != nil {
-		panic(err)
-	}
-	writer.Write(dataToShow)
+func WriteInternalServerError(writer http.ResponseWriter) {
+	models.WriteErrorResponse(writer, 500, "Internal Server Error")
 }
