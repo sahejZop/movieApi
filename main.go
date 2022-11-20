@@ -79,12 +79,18 @@ func handleMovieById(writer http.ResponseWriter, request *http.Request) {
 }
 
 func getMovieById(id int, writer http.ResponseWriter) {
-	movie := models.GetMovieById(id)
-	movieJson, err := json.Marshal(movie)
-	if err != nil {
-		panic(err)
+	movieMap := models.ReadMovies()
+	movie, itExists := movieMap[id]
+	if itExists {
+		movieJson, err := json.Marshal(movie)
+		if err != nil {
+			panic(err)
+		}
+		writer.Write(movieJson)
+	} else {
+		writer.Write([]byte("Movie with this id does not exist"))
+		writer.WriteHeader(405)
 	}
-	writer.Write(movieJson)
 }
 
 func deleteMovieById(id int, writer http.ResponseWriter) {
