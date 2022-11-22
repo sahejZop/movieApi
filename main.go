@@ -38,7 +38,7 @@ func handleMovies(writer http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case "GET":
 		{
-			err := getMovies(writer)
+			err := handleGetMovies(writer)
 			if err != nil {
 				WriteInternalServerError(writer)
 			}
@@ -53,8 +53,8 @@ func handleMovies(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func getMovies(writer http.ResponseWriter) error {
-	moviesList, err := models.GetMovies()
+func handleGetMovies(writer http.ResponseWriter) error {
+	moviesList, err := models.GetMoviesFromDatabase()
 	if err != nil {
 		return err
 	}

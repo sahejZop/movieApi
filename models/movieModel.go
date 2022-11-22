@@ -27,7 +27,7 @@ func ReadMovies() (mapOfMovies map[int]MovieModel, err error) {
 	return
 }
 
-func GetMovies() (moviesList []MovieModel, err error) {
+func GetMoviesFromDatabase() (moviesList []MovieModel, err error) {
 	mapOfMovies, err := ReadMovies()
 	if err != nil {
 		return nil, err
@@ -39,6 +39,7 @@ func GetMovies() (moviesList []MovieModel, err error) {
 }
 
 func ConvertSliceToMap(moviesList []MovieModel) (mapOfMovies map[int]MovieModel) {
+	mapOfMovies = map[int]MovieModel{}
 	for _, movie := range moviesList {
 		mapOfMovies[movie.Id] = movie
 	}
