@@ -1,30 +1,13 @@
-package models
+package handler
 
 import (
 	"encoding/json"
+	"movieApi/internals/models"
 	"net/http"
 )
 
-type ResponseModelForSingleMovie struct {
-	Code   int        `json:"code,omitempty"`
-	Status string     `json:"status,omitempty"`
-	Data   MovieModel `json:"data"`
-}
-
-type ResponseModelWithStringData struct {
-	Code   int    `json:"code,omitempty"`
-	Status string `json:"status,omitempty"`
-	Data   string `json:"data,omitempty"`
-}
-
-type ResponseModelForListOfMovie struct {
-	Code   int          `json:"code,omitempty"`
-	Status string       `json:"status,omitempty"`
-	Data   []MovieModel `json:"data,omitempty"`
-}
-
 func WriteErrorResponse(writer http.ResponseWriter, code int, error string) {
-	response := ResponseModelWithStringData{
+	response := models.ResponseModelWithStringData{
 		Code:   code,
 		Status: "ERROR",
 		Data:   error,
@@ -38,8 +21,8 @@ func WriteErrorResponse(writer http.ResponseWriter, code int, error string) {
 	return
 }
 
-func WriteSuccessResponse(writer http.ResponseWriter, code int, status string, data []MovieModel) {
-	response := ResponseModelForListOfMovie{
+func WriteSuccessResponse(writer http.ResponseWriter, code int, status string, data []models.MovieModel) {
+	response := models.ResponseModelForListOfMovie{
 		Code:   code,
 		Status: status,
 		Data:   data,
@@ -51,8 +34,8 @@ func WriteSuccessResponse(writer http.ResponseWriter, code int, status string, d
 	writer.Write(dataToShow)
 }
 
-func WriteSuccessResponseSingleMovie(writer http.ResponseWriter, code int, status string, data MovieModel) {
-	response := ResponseModelForSingleMovie{
+func WriteSuccessResponseSingleMovie(writer http.ResponseWriter, code int, status string, data models.MovieModel) {
+	response := models.ResponseModelForSingleMovie{
 		Code:   code,
 		Status: status,
 		Data:   data,
@@ -65,7 +48,7 @@ func WriteSuccessResponseSingleMovie(writer http.ResponseWriter, code int, statu
 }
 
 func WriteSuccessResponseForDelete(writer http.ResponseWriter, code int, status string, data string) {
-	response := ResponseModelWithStringData{
+	response := models.ResponseModelWithStringData{
 		Code:   code,
 		Status: status,
 		Data:   data,
@@ -75,4 +58,8 @@ func WriteSuccessResponseForDelete(writer http.ResponseWriter, code int, status 
 		panic(err)
 	}
 	writer.Write(dataToShow)
+}
+
+func WriteInternalServerError(writer http.ResponseWriter) {
+	WriteErrorResponse(writer, 500, "Internal Server Error")
 }

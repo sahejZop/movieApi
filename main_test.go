@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"movieApi/models"
+	models2 "movieApi/internals/models"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -13,18 +13,18 @@ import (
 )
 
 type TestCaseListOfMovie struct {
-	Input          []models.MovieModel
-	ExpectedOutput models.ResponseModelForListOfMovie
+	Input          []models2.MovieModel
+	ExpectedOutput models2.ResponseModelForListOfMovie
 }
 
 type TestCaseStringOutput struct {
 	Input          string
-	ExpectedOutput models.ResponseModelWithStringData
+	ExpectedOutput models2.ResponseModelWithStringData
 }
 
 func TestGetMovieById(t *testing.T) {
 	testCaseSlice := []TestCaseStringOutput{{
-		ExpectedOutput: models.ResponseModelWithStringData{Code: 404, Status: "ERROR", Data: "Movie with this id does not exist"},
+		ExpectedOutput: models2.ResponseModelWithStringData{Code: 404, Status: "ERROR", Data: "Movie with this id does not exist"},
 		Input:          "0",
 	}}
 
@@ -44,11 +44,11 @@ func TestGetMovieById(t *testing.T) {
 
 func TestGetMovies(t *testing.T) {
 
-	moviesList, err := models.GetMoviesFromDatabase()
+	moviesList, err := models2.GetMoviesFromDatabase()
 	if err != nil {
 		t.Errorf("error in getting from database")
 	}
-	testCase := models.ResponseModelForListOfMovie{Code: 200, Status: "SUCCESS", Data: moviesList}
+	testCase := models2.ResponseModelForListOfMovie{Code: 200, Status: "SUCCESS", Data: moviesList}
 
 	resp := httptest.NewRecorder()
 
@@ -58,7 +58,7 @@ func TestGetMovies(t *testing.T) {
 	}
 
 	dataFromResponse, err := io.ReadAll(resp.Result().Body)
-	var structFromResponse = models.ResponseModelForListOfMovie{}
+	var structFromResponse = models2.ResponseModelForListOfMovie{}
 	err = json.Unmarshal(dataFromResponse, &structFromResponse)
 
 	if !reflect.DeepEqual(structFromResponse, testCase) {
@@ -69,7 +69,7 @@ func TestGetMovies(t *testing.T) {
 func TestPostMovies(t *testing.T) {
 	testCasesSlice := []TestCaseListOfMovie{
 		{
-			Input: []models.MovieModel{{
+			Input: []models2.MovieModel{{
 				Id:       13,
 				Name:     "The Ring",
 				Genre:    "Horror",
@@ -78,11 +78,11 @@ func TestPostMovies(t *testing.T) {
 				Released: true,
 			},
 			},
-			ExpectedOutput: models.ResponseModelForListOfMovie{
+			ExpectedOutput: models2.ResponseModelForListOfMovie{
 
 				Code:   200,
 				Status: "SUCCESS",
-				Data: []models.MovieModel{
+				Data: []models2.MovieModel{
 					{
 						Id:       13,
 						Name:     "The Ring",
@@ -96,7 +96,7 @@ func TestPostMovies(t *testing.T) {
 		},
 		{
 			Input: nil,
-			ExpectedOutput: models.ResponseModelForListOfMovie{
+			ExpectedOutput: models2.ResponseModelForListOfMovie{
 				Code:   200,
 				Status: "SUCCESS",
 				Data:   nil,
@@ -117,7 +117,7 @@ func TestPostMovies(t *testing.T) {
 	testCasesSliceWithDifferentInput := []TestCaseStringOutput{
 		{
 			Input: "test",
-			ExpectedOutput: models.ResponseModelWithStringData{
+			ExpectedOutput: models2.ResponseModelWithStringData{
 				Code:   400,
 				Status: "ERROR",
 				Data:   "Incorrect format of data",
@@ -140,7 +140,7 @@ func TestPostMovies(t *testing.T) {
 		}
 
 		dataFromResponse, err := io.ReadAll(response.Result().Body)
-		var structFromResponse = models.ResponseModelForListOfMovie{}
+		var structFromResponse = models2.ResponseModelForListOfMovie{}
 		err = json.Unmarshal(dataFromResponse, &structFromResponse)
 		if err != nil {
 			t.Errorf("error while unmarshalling")
@@ -166,7 +166,7 @@ func TestPostMovies(t *testing.T) {
 		}
 
 		dataFromResponse, err := io.ReadAll(response.Result().Body)
-		var structFromResponse = models.ResponseModelWithStringData{}
+		var structFromResponse = models2.ResponseModelWithStringData{}
 		err = json.Unmarshal(dataFromResponse, &structFromResponse)
 		if err != nil {
 			t.Errorf("error while unmarshalling")
