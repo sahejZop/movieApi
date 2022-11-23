@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"movieApi/models"
 	"net/http"
 	"strconv"
+
+	_ "github.com/go-sql-driver/mysql"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {

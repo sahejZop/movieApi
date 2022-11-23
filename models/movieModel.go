@@ -1,8 +1,11 @@
 package models
 
 import (
-	"encoding/json"
-	"os"
+	"context"
+	"database/sql"
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type MovieModel struct {
@@ -14,16 +17,24 @@ type MovieModel struct {
 	Released bool    `json:"released,omitempty"`
 }
 
-func ReadMovies() (mapOfMovies map[int]MovieModel, err error) {
-	jsonData, err := os.ReadFile("./data/MoviesList.json")
+var db, err = sql.Open("mysql", "root:jqry4698@tcp(172.17.0.2:3306)/movies_database")
+
+func init() {
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
 	}
-	err = json.Unmarshal(jsonData, &mapOfMovies)
-	if err != nil {
-		return nil, err
+}
+
+func ReadMovies() (mapOfMovies map[int]MovieModel, err error) {
+	rows, err := db.QueryContext(context.Background(), "select * from movies")
+	m := MovieModel{}
+	mapOfMovies = map[int]MovieModel{}
+	for rows.Next() {
+		rows.Scan(&m.Id, &m.Name, &m.Genre, &m.Rating, &m.Plot, &m.Released)
+		mapOfMovies[m.Id] = m
 	}
 
+	fmt.Println(mapOfMovies)
 	return
 }
 
@@ -47,24 +58,19 @@ func ConvertSliceToMap(moviesList []MovieModel) (mapOfMovies map[int]MovieModel)
 }
 
 func SetMovies(mapOfMovies map[int]MovieModel) error {
-	jsonData, err := json.Marshal(mapOfMovies)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile("./data/MoviesList.json", jsonData, 0644)
-	if err != nil {
-		return err
+	for key := range mapOfMovies {
+		db.ExecContext(context.Background(), "INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?)",
+			mapOfMovies[key].Id, mapOfMovies[key].Name, mapOfMovies[key].Genre, mapOfMovies[key].Rating,
+			mapOfMovies[key].Plot, mapOfMovies[key].Released)
 	}
 	return nil
 }
 
 func DeleteMovieById(id int) error {
-	mapOfMovies, err := ReadMovies()
+	_, err = db.ExecContext(context.Background(), "DELETE FROM movies WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
-	delete(mapOfMovies, id)
-	SetMovies(mapOfMovies)
 	return nil
 }
 
