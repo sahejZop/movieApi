@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"movieApi/internals/models"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -20,6 +21,10 @@ type Store struct {
 	Db *sql.DB
 }
 
+func New(db *sql.DB) *Store {
+	return &Store{db}
+}
+
 func (store Store) SetMoviesWithoutId(moviesList []models.MovieModelWithoutId) ([]models.MovieModel, error) {
 	var moviesStructWithId []models.MovieModel
 	for _, val := range moviesList {
@@ -27,7 +32,7 @@ func (store Store) SetMoviesWithoutId(moviesList []models.MovieModelWithoutId) (
 			val.Name, val.Genre, val.Rating, val.Plot, val.Released,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("error in sql query")
 		}
 		lastInsertedId, _ := rows.LastInsertId()
 		moviesStructWithId = append(moviesStructWithId, models.MovieModel{
